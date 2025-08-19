@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Fusion++.Engine/Fusion++.Engine.csproj" />
+  <Project Path="Fusion++.Tests/Fusion++.Tests.csproj" Id="967e8901-43de-4af1-86df-bb18c8949c44" />
+  <Project Path="Fusion++/Fusion++.csproj" />
+</Solution>
