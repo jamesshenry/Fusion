@@ -15,6 +15,7 @@
     <PackageReference Include="DevExpress.Win.Navigation" Version="25.2.3" />
     <PackageReference Include="DevExpress.Win.Grid" Version="25.2.3" />
     <PackageReference Include="DevExpress.Win.RichEdit" Version="25.2.3" />
+    <PackageReference Include="Velopack" Version="0.0.1298" />
   </ItemGroup>
 
   <ItemGroup>
