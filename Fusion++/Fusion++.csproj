@@ -6,15 +6,18 @@
     <RootNamespace>FusionPlusPlus</RootNamespace>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <PublishSelfContained>true</PublishSelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
     <AssemblyVersion>1.5</AssemblyVersion>
     <Version>1.5.0.0</Version>
     <FileVersion>1.5.0.0</FileVersion>
+    <ApplicationIcon>..\_res\app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DevExpress.Win.Navigation" Version="25.2.3" />
-    <PackageReference Include="DevExpress.Win.Grid" Version="25.2.3" />
-    <PackageReference Include="DevExpress.Win.RichEdit" Version="25.2.3" />
+    <PackageReference Include="DevExpress.Win.Navigation" Version="25.2.4" />
+    <PackageReference Include="DevExpress.Win.Grid" Version="25.2.4" />
+    <PackageReference Include="DevExpress.Win.RichEdit" Version="25.2.4" />
     <PackageReference Include="Velopack" Version="0.0.1298" />
   </ItemGroup>
 

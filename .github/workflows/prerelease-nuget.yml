@@ -1,0 +1,28 @@
+name: Publish Preview Nuget
+
+on:
+  push:
+    tags:
+      - "[0-9]*.[0-9]*.[0-9]*-*" # Matches semver tags with a suffix, e.g., 1.2.3-preview, 1.2.3-beta1
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release-nuget-preview:
+    name: Publish Preview NuGet Package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Run Tests
+        run: dotnet run .build/targets.cs test
+      - name: Pack NuGet Package
+        run: dotnet run .build/targets.cs pack
+      - name: Push NuGet Package
+        run: dotnet nuget push "dist/nuget/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source "https://api.nuget.org/v3/index.json" --skip-duplicate
