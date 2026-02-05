@@ -6,6 +6,7 @@ using FusionPlusPlus.Engine.Helper;
 using FusionPlusPlus.Engine.Model;
 using FusionPlusPlus.Syntax;
 using System;
+using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
@@ -20,7 +21,6 @@ namespace FusionPlusPlus.Forms
 		public ItemDetailForm()
 		{
 			InitializeComponent();
-			richLog.ReplaceService<ISyntaxHighlightService>(new FusionLogSyntaxHighlightService(richLog.Document));
 		}
 
 		protected override void OnShown(EventArgs e)
@@ -50,6 +50,7 @@ namespace FusionPlusPlus.Forms
 				document.Sections[0].LineNumbering.CountBy = 1;
 				document.Sections[0].LineNumbering.RestartType = DevExpress.XtraRichEdit.API.Native.LineNumberingRestart.Continuous;
 				document.CharacterStyles["Line Number"].ForeColor = Color.DeepSkyBlue;
+				richLog.ReplaceService<ISyntaxHighlightService>(new FusionLogSyntaxHighlightService(richLog.Document));
 			}
 			finally
 			{
@@ -79,12 +80,16 @@ namespace FusionPlusPlus.Forms
 			}
 		}
 
-		public AggregateLogItem Item
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public AggregateLogItem Item
 		{
 			get => _item;
 			set
 			{
 				_item = value;
+
+				if (DesignMode)
+					return;
 
 				if (_item != null)
 				{
@@ -102,6 +107,7 @@ namespace FusionPlusPlus.Forms
 			}
 		}
 
-		public ILogItemNavigator ItemNavigator { get; set; }
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public ILogItemNavigator ItemNavigator { get; set; }
 	}
 }
