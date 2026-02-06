@@ -1,4 +1,4 @@
-name: Publish Stable Release
+name: Publish Prerelease
 
 on:
   push:
@@ -20,25 +20,39 @@ jobs:
         uses: actions/checkout@v4
       - name: Get or Create Release
         id: get_or_create_release
-        shell: bash
+        shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if UPLOAD_URL=$(gh release view ${{ github.ref_name }} --json uploadUrl --jq .uploadUrl 2>/dev/null); then
-            echo "Release already exists. Using existing upload URL."
-          else
-            echo "Release does not exist. Creating a new one."
-            # Create the release and capture its upload_url from the output.
-            UPLOAD_URL=$(gh release create ${{ github.ref_name }} \
-                          --title "Release ${{ github.ref_name }}" \
-                          --notes "Automated release created by GitHub Actions." \
-                          --draft | grep -oP 'https://uploads.github.com/repos/.*/releases/.*/assets' )
-          fi
-          echo "Setting output: upload_url=$UPLOAD_URL"
-          echo "upload_url=$UPLOAD_URL" >> $GITHUB_OUTPUT
+          $ErrorActionPreference = "Stop"
+          $tagName = "${{ github.ref_name }}"
+          
+          # Try to get existing release
+          $existingRelease = gh release view $tagName --json uploadUrl 2>$null
+          
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Release already exists. Using existing upload URL."
+            $uploadUrl = ($existingRelease | ConvertFrom-Json).uploadUrl
+          } else {
+            Write-Host "Release does not exist. Creating a new one."
+            
+            # Create the release
+            gh release create $tagName `
+              --title "Release $tagName" `
+              --notes "Automated release created by GitHub Actions." `
+              --draft
+            
+            # Fetch the upload URL
+            $releaseInfo = gh release view $tagName --json uploadUrl | ConvertFrom-Json
+            $uploadUrl = $releaseInfo.uploadUrl
+          }
+          
+          Write-Host "Setting output: upload_url=$uploadUrl"
+          "upload_url=$uploadUrl" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
   build-and-upload:
     name: Build & Upload for ${{ matrix.rid }}
-    needs: create-release # Depends on the release placeholder being created.
+    needs: create-release
     runs-on: ${{ matrix.runner_os }}
     strategy:
       matrix:
@@ -58,30 +72,46 @@ jobs:
         run: dotnet tool restore
       - name: Get version
         id: minver
-        shell: bash
+        shell: pwsh
         run: |
-          VERSION_OUTPUT=$(dotnet minver --default-pre-release-identifiers preview --verbosity error)
-          echo "Discovered version: $VERSION_OUTPUT"
-          echo "package_version=$VERSION_OUTPUT" >> $GITHUB_OUTPUT
+          $version = dotnet minver --default-pre-release-identifiers preview --verbosity error
+          Write-Host "Discovered version: $version"
+          "package_version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         env:
           DOTNET_NOLOGO: true
       - name: Build Release for ${{ matrix.rid }}
         run: dotnet run .build/targets.cs release --rid ${{ matrix.rid }} --version ${{ steps.minver.outputs.package_version }}
       - name: Upload Release Assets
-        shell: bash
+        shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Define the path to the release directory and the assets file
-          RELEASE_DIR="dist/release/${{ matrix.rid }}"
-          ASSETS_FILE="$RELEASE_DIR/assets.${{ matrix.os_name }}.json"
-          echo "Looking for assets file at: $ASSETS_FILE"
-          cd "$RELEASE_DIR"
-          ASSET_LIST=$(jq -r '.[] | select(.Type=="Installer" or .Type=="Portable") | .RelativeFileName' "assets.${{ matrix.os_name }}.json")
-          if [ -z "$ASSET_LIST" ]; then
-            echo "Warning: No Installer or Portable assets found in $ASSETS_FILE. Nothing to upload."
-          else
-            echo "Found assets to upload:"
-            echo "$ASSET_LIST"
-            echo "$ASSET_LIST" | tr -d '\r' | xargs gh release upload ${{ github.ref_name }} --clobber
-          fi
+          $ErrorActionPreference = "Stop"
+          $releaseDir = "dist/release/${{ matrix.rid }}"
+          $assetsFile = "$releaseDir/assets.${{ matrix.os_name }}.json"
+          
+          Write-Host "Looking for assets file at: $assetsFile"
+          
+          if (-not (Test-Path $assetsFile)) {
+            Write-Warning "Assets file not found at $assetsFile"
+            exit 0
+          }
+          
+          $assets = Get-Content $assetsFile | ConvertFrom-Json
+          $filesToUpload = $assets | Where-Object { $_.Type -eq "Installer" -or $_.Type -eq "Portable" } | Select-Object -ExpandProperty RelativeFileName
+          
+          if ($filesToUpload.Count -eq 0) {
+            Write-Warning "No Installer or Portable assets found in $assetsFile. Nothing to upload."
+          } else {
+            Write-Host "Found assets to upload:"
+            $filesToUpload | ForEach-Object { Write-Host "  $_" }
+            
+            Push-Location $releaseDir
+            try {
+              foreach ($file in $filesToUpload) {
+                gh release upload ${{ github.ref_name }} $file --clobber
+              }
+            } finally {
+              Pop-Location
+            }
+          }
