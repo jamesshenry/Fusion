@@ -87,7 +87,10 @@ app.OnExecuteAsync(async ct =>
             var testResultFolder = "TestResults";
             var coverageFileName = "coverage.xml";
             var testResultPath = Directory.CreateDirectory(Path.Combine(root, testResultFolder));
-            await RunAsync("dotnet", $"test --solution {solution} --configuration {configuration}");
+            await RunAsync(
+                "dotnet",
+                $"test --solution {solution} --configuration {configuration} --coverage --coverage-output {Path.Combine(testResultPath.FullName, coverageFileName)} --coverage-output-format xml --ignore-exit-code 8"
+            );
         }
     );
 
@@ -132,9 +135,6 @@ tool run reportgenerator -reports:"{coverageInputPath}" -targetdir:"{reportOutpu
             var runtimeArg = $"--runtime {rid}";
 
             var publishDir = Path.Combine(root, "dist", "publish", rid);
-
-            Console.WriteLine("Output directory: " + publishDir);
-
             if (Directory.Exists(publishDir))
                 Directory.Delete(publishDir, true);
 

@@ -18,6 +18,10 @@
     <PackageReference Include="DevExpress.Win.Navigation" Version="25.2.4" />
     <PackageReference Include="DevExpress.Win.Grid" Version="25.2.4" />
     <PackageReference Include="DevExpress.Win.RichEdit" Version="25.2.4" />
+    <PackageReference Include="MinVer" Version="7.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Velopack" Version="0.0.1298" />
   </ItemGroup>
 
