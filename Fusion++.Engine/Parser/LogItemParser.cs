@@ -13,7 +13,7 @@ namespace FusionPlusPlus.Engine.Parser
 		{
 			value = value.Trim(new char[] { '\r', '\n' });
 
-			var result = new LogItem();
+            var result = new LogItem();
 			result.FullMessage = value;
 			result.AccumulatedState = LogItem.State.Information;
 
@@ -70,23 +70,39 @@ namespace FusionPlusPlus.Engine.Parser
 			if (match.Success)
 			{
 				var value = match.Value.Trim().Replace("@", "");
+                value = Regex.Replace(value, @"\s+", " ");
 
-				if (DateTime.TryParse(value, DateTimeFormatInfo.CurrentInfo, DateTimeStyles.AssumeLocal, out DateTime result))
+                if (DateTime.TryParse(value, DateTimeFormatInfo.CurrentInfo, DateTimeStyles.AssumeLocal, out DateTime result))
 				{
 					setter(result);
 					return true;
 				}
 
-				if (DateTime.TryParse(value, _fallbackFormatProvider, DateTimeStyles.AssumeLocal, out DateTime fallbackResult))
-				{
-					setter(fallbackResult);
-					return true;
-				}
-			}
+                string[] formats =
+                [
+            "dd.MM.yyyy HH:mm:ss",
+			"dd.MM.yyyy H:mm:ss",
+			"M/d/yyyy h:mm:ss tt",
+			"M/d/yyyy HH:mm:ss",
+			"dd/MM/yyyy HH:mm:ss",
+			"dd/MM/yyyy H:mm:ss",
+			"yyyy/MM/dd HH:mm:ss",
+			"dd-MM-yyyy HH:mm:ss",
+		];
+
+                foreach (var format in formats)
+                {
+                    if (DateTime.TryParseExact(value, format, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out DateTime exactResult))
+                    {
+                        setter(exactResult);
+                        return true;
+                    }
+                }
+            }
 
 			return false;
 		}
 
-		internal string[] LineSeparators { get; } = new string[] { Environment.NewLine, "\n" };
+		internal string[] LineSeparators { get; } = [Environment.NewLine, "\n"];
 	}
 }
