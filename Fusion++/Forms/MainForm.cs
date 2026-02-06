@@ -14,8 +14,6 @@ using DevExpress.XtraBars;
 using FusionPlusPlus.Controls;
 using System.Threading;
 using System.Threading.Tasks;
-using TinySoup.Model;
-using TinySoup;
 using DevExpress.XtraBars.ToolbarForm;
 using FusionPlusPlus.Engine.Helper;
 
@@ -57,8 +55,6 @@ namespace FusionPlusPlus.Forms
 			_overlays[OverlayState.Empty].SendToBack();
 			_overlays[OverlayState.Loading].BringToFront();
 			_overlays[OverlayState.Recording].BringToFront();
-
-			_updateTimer = new System.Threading.Timer(async state => await CheckForUpdatesAsync(), null, 5000, Timeout.Infinite);
 
 			_parser = new LogFileParser(new LogItemParser(), new FileReader(), null)
 			{
@@ -358,31 +354,6 @@ namespace FusionPlusPlus.Forms
 		{
 			_lastUsedFilePath = directory;
 			await LoadLogsAsync(directory);
-		}
-
-		private async Task CheckForUpdatesAsync()
-		{
-			_updateTimer.Change(Timeout.Infinite, Timeout.Infinite);
-
-			var request = new UpdateRequest()
-				.WithNameAndVersionFromEntryAssembly()
-				.AsAnonymousClient()
-				.OnChannel("stable")
-				.OnPlatform(new OperatingSystemIdentifier());
-
-			var client = new WebSoupClient();
-			var updates = await client.CheckForUpdatesAsync(request);
-
-			var availableUpdate = updates.FirstOrDefault();
-			if (availableUpdate != null)
-			{
-				this.Invoke((Action)(() =>
-					{
-						biUpdate.Visibility = BarItemVisibility.Always;
-						biUpdate.Hint = $"Version {availableUpdate.ShortestVersionString} is available.";
-						biUpdate.Tag = availableUpdate.Url;
-					}));
-			}
 		}
 
 		private void LoadingOverlay_CancelRequested(object sender, EventArgs e)

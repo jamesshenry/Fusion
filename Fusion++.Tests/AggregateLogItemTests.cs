@@ -1,7 +1,7 @@
 ﻿using FusionPlusPlus.Engine.Model;
 using FusionPlusPlus.Engine.Parser;
 using NUnit.Framework;
-using FluentAssertions;
+using AwesomeAssertions;
 using System;
 
 namespace FusionPlusPlus.Tests
