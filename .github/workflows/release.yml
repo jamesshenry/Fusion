@@ -57,30 +57,46 @@ jobs:
       run: dotnet tool restore
     - name: Get version
       id: minver
-      shell: bash
+      shell: pwsh
       run: |
-        VERSION_OUTPUT=$(dotnet minver --default-pre-release-identifiers preview --verbosity error)
-        echo "Discovered version: $VERSION_OUTPUT"
-        echo "package_version=$VERSION_OUTPUT" >> $GITHUB_OUTPUT
+        $version = dotnet minver --tag-prefix v --default-pre-release-identifiers preview --verbosity error
+        Write-Host "Discovered version: $version"
+        "package_version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
       env:
         DOTNET_NOLOGO: true
     - name: Build Release for ${{ matrix.rid }}
       run: dotnet run .build/targets.cs release --rid ${{ matrix.rid }} --version ${{ steps.minver.outputs.package_version }}
     - name: Upload Release Assets
-      shell: bash
+      shell: pwsh
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # Define the path to the release directory and the assets file
-        RELEASE_DIR="dist/release/${{ matrix.rid }}"
-        ASSETS_FILE="$RELEASE_DIR/assets.${{ matrix.os_name }}.json"
-        echo "Looking for assets file at: $ASSETS_FILE"
-        cd "$RELEASE_DIR"
-        ASSET_LIST=$(jq -r '.[] | select(.Type=="Installer" or .Type=="Portable") | .RelativeFileName' "assets.${{ matrix.os_name }}.json")
-        if [ -z "$ASSET_LIST" ]; then
-          echo "Warning: No Installer or Portable assets found in $ASSETS_FILE. Nothing to upload."
-        else
-          echo "Found assets to upload:"
-          echo "$ASSET_LIST"
-          echo "$ASSET_LIST" | tr -d '\r' | xargs gh release upload ${{ github.ref_name }} --clobber
-        fi
+        $ErrorActionPreference = "Stop"
+        $releaseDir = "dist/release/${{ matrix.rid }}"
+        $assetsFile = "$releaseDir/assets.${{ matrix.os_name }}.json"
+          
+        Write-Host "Looking for assets file at: $assetsFile"
+          
+        if (-not (Test-Path $assetsFile)) {
+          Write-Warning "Assets file not found at $assetsFile"
+          exit 0
+        }
+          
+        $assets = Get-Content $assetsFile | ConvertFrom-Json
+        $filesToUpload = $assets | Where-Object { $_.Type -eq "Installer" -or $_.Type -eq "Portable" } | Select-Object -ExpandProperty RelativeFileName
+          
+        if ($filesToUpload.Count -eq 0) {
+          Write-Warning "No Installer or Portable assets found in $assetsFile. Nothing to upload."
+        } else {
+          Write-Host "Found assets to upload:"
+          $filesToUpload | ForEach-Object { Write-Host "  $_" }
+            
+          Push-Location $releaseDir
+          try {
+            foreach ($file in $filesToUpload) {
+              gh release upload ${{ github.ref_name }} $file --clobber
+            }
+          } finally {
+            Pop-Location
+          }
+        }

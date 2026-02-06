@@ -74,7 +74,7 @@ jobs:
         id: minver
         shell: pwsh
         run: |
-          $version = dotnet minver --default-pre-release-identifiers preview --verbosity error
+          $version = dotnet minver --tag-prefix v --default-pre-release-identifiers preview --verbosity error
           Write-Host "Discovered version: $version"
           "package_version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         env:
