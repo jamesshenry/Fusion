@@ -11,7 +11,7 @@ permissions:
 jobs:
   create-release:
     name: Create or Find GitHub Release
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     outputs:
       upload_url: ${{ steps.get_or_create_release.outputs.upload_url }}
     steps:
@@ -42,9 +42,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - { runner_os: ubuntu-latest, rid: linux-x64, os_name: linux }
           - { runner_os: windows-latest, rid: win-x64, os_name: win }
-          - { runner_os: macos-latest, rid: osx-x64, os_name: osx }
       fail-fast: false
     steps:
     - name: Checkout code
